@@ -1,0 +1,17 @@
+back-xelent:
+  VDC_options:
+    DC: Xelent
+    pull: base
+  servers:
+    template: "min_01"
+    name: "Nginx"
+    value: 2
+
+back-ahost:
+  VDC_options:
+    DC: DataSpace
+    pull: hight
+  servers:
+    template: "min_02"
+    name: "Node.js"
+    value: 1

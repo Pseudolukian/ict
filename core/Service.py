@@ -1,6 +1,7 @@
 from pathlib import Path
 from typing import Any, Union
-import yaml, json
+from prettytable import PrettyTable
+import yaml, json, time
 from datetime import datetime
 
 
@@ -59,14 +60,14 @@ class Service:
         Не реализован механизм обновления информации с учётом даты. Сейчас метод чекает только длину файла и всё.
         """
         from core.OneCloud import OneCloudAPI
-        api = OneCloudAPI()
+        
         conf = Path(self.full_path)
         date = datetime.now()
         date_string = date.strftime("%d.%m")
         
         if len(self.conf_worker()) >0:
             config = dict(json.load(open(conf)))
-            api_key = json.load(open(conf))["Config"][0]
+            api = OneCloudAPI(api_key= self.conf_worker()["API_key"])
             
             os_list = []
             vdc_list = []
@@ -87,6 +88,15 @@ class Service:
                 json.dump(config, file, ensure_ascii=False)
         
             return "Refresh Ok!"
+
+    def api_key_caller(self):
+        api_key = str()
+        
+        for el in self.conf_worker()["Config"]:
+            for k,v in el.items():
+                if k == "API_key":
+                    api_key = v    
+        return api_key   
         
     def vdc_data_chenger(self, publick_name: str) -> dict[str, str | bool]:
         data = json.load(open(self.full_path))["Config"]
@@ -135,3 +145,77 @@ class Service:
                 servers_data.append(serv_copy)
         
         return servers_data
+
+
+    def create_hosts_file(self, data):
+        """
+        Create a hosts.ini file for Ansible from a list of dictionaries containing IP, user_name, and password.
+        """
+        with open('hosts.ini', 'w') as f:
+            for item in data:
+                f.write("[{}]\n".format(item["IP"]))
+                f.write("{} ansible_user={} ansible_password={}\n".format(item["IP"], item["user_name"], item["password"]))
+        return f"Hosts file created."        
+
+
+    def printer(self, data):
+        
+        def same_keys(dicts: list[dict]) -> bool:
+            keys = set(dicts[0].keys())
+            return all(filter(lambda d: set(d.keys()) == keys, dicts))
+        
+        if type(data) is list and same_keys(dicts = data):
+            table = PrettyTable()
+            table.field_names = list(data[0].keys())
+            for i, d in enumerate(data):
+                table.add_row(list(d.values()))
+            print(table)
+
+        elif type(data) is dict:
+            table = PrettyTable()
+            table.field_names = list(data.keys())
+            for i, d in enumerate(data):
+                table.add_row(list(d.values()))
+            print(table)
+
+
+    def logger(self, task_type, data):
+        log_path = Path(".", "log.json")
+        def_structure = {"Tasks":[{"Server":[]}, {"Nets":[]}]}
+
+        def opener():
+            with open(log_path) as f:
+                log_data = json.load(f)
+            return log_data["Tasks"]
+
+        def creator():
+            with open(log_path, "w") as log:
+                json.dump(def_structure, log) 
+
+        def editor():
+            log_data = opener()
+            if task_type == "Server":
+                server_tasks = log_data[0]["Server"]
+                server_tasks.append(data)
+            elif task_type == "Net":
+                net_tasks = log_data[1]["Nets"]
+                net_tasks.append(data)
+            with open(log_path, "w") as log:
+                json.dump({"Tasks": log_data}, log)
+
+        if log_path.is_file() and log_path.stat().st_size > 0:
+            editor()
+        else:
+            creator()
+            while not log_path.is_file():
+                time.sleep(1)
+            editor()  
+
+   
+            
+            
+
+            
+
+
+

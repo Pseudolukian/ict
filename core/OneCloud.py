@@ -8,7 +8,11 @@ class OneCloudAPI:
     serv = Service()
     """
     This class realized working with 1cloud API server.  
+    Вынести API_Key из req в __init__.
     """
+    def __init__(self, api_key):
+        self._base_url = "https://api.1cloud.ru/"
+        self.api_key = api_key
 
     def req(self, url, method = "get", data=None):
         """
@@ -20,16 +24,19 @@ class OneCloudAPI:
         This method using by another this class methods.  
         """
         method.lower()
-        api_key = self.serv.conf_worker()["Config"][0]["API_key"]
+        api_key = self.api_key
         headers = {"Content-Type":"application/json","Authorization": "Bearer {}".format(api_key)}
         if method == "get":
             req = requests.get(url=url, headers=headers)
             return req.json()
         elif method == "delete":
             req = requests.delete(url=url, headers=headers)
-            return req.json()
+            return req
         elif method == "post":
             req = requests.post(url=url, headers=headers, data = data)
+            return req.json()
+        elif method == "put":
+            req = requests.put(url=url, headers=headers, data = data)
             return req.json()
 
 
@@ -40,9 +47,20 @@ class OneCloudAPI:
         Method return HTTP request to 1cloud API server. 
         Сервера удаляются, но выпадает ошибка.
         """
+        except_param_list = ["LinkedSshKeys","LinkedNetworks","HostName",
+                            "AdminUserName","AdminPassword","ImageFamily",
+                            "DateCreate","IsPowerOn","PrimaryNetworkIp","Image",
+                            "IsHighPerformance", "IP"]
+
+        except_param_create = except_param_list                    
+        
+        servers_list = []
 
         if action == "list" and data == None:
-            servers_list = [{serv["Name"]: [{"ID":serv["ID"]}, {"IP":serv["IP"]}]} for serv in self.req(url="https://api.1cloud.ru/server")]
+            for server in self.req(url = self._base_url + "server"):
+                for exc in except_param_list:
+                    del server[exc]
+                servers_list.append(server)
             return servers_list
         
         elif action == "delete" and data !=0:
@@ -59,26 +77,53 @@ class OneCloudAPI:
             servers_in_temp = self.serv.infrastr_temp_pars(data)
             serv_on_prod = self.server()
             serv_to_deploy = []
+            servers_predep = []
             
             for server in servers_in_temp:
                 if server['Name'] not in [next(iter(x)) for x in serv_on_prod]:
                     serv_to_deploy.append(server)
             
             for dep in serv_to_deploy:
-                print(self.req(url="https://api.1cloud.ru/server/", method="post", data=json.dumps(dep)))
-            return     
+                serv_pre_dep = self.req(url="https://api.1cloud.ru/server/", method="post", data=json.dumps(dep))
+                servers_predep.append(serv_pre_dep)
+
+            for i in range(len(servers_predep)):
+                for exc in except_param_create:
+                    del servers_predep[i][exc]
+                    servers_predep[i] = servers_predep[i]
+
+            for pre_serv in servers_predep:
+                serv.logger(task_type="Server", data=pre_serv)       
             
-    def net(self, type = "private", action = "list", data = None):
-        net_priv_cre_req = {"Name":"testNetworkAPI","DCLocation":"SdnSpb", "IsDHCP":"true","Gateway":"10.0.0.1", "LinkedServers":[]}
-
-        if type =="private" and action == "list":
-            return self.req(url="https://api.1cloud.ru/network")
+            return servers_predep     
         
-        elif type =="public" and action == "list":
-            return self.req(url="https://api.1cloud.ru/publicnetwork")
-        elif type == "private" and action == "create":
-            return self.req(url="https://api.1cloud.ru/network", method = "post", data = net_priv_cre_req)
 
+
+        elif action == "update" and data !=0:
+            
+            pass
+
+            
+    def private_net(self, action = "list", data = None):
+        if action == "list" and data is None:
+            return self.req(url="https://api.1cloud.ru/network", method="get")
+        
+        elif action == "create" and data !=0:
+            temp_data = self.serv.template_parser(data)
+            nets_to_dep = []
+        
+            for key in temp_data.keys():
+                if "priv_net" in temp_data[key].keys():
+                    net = temp_data[key]["priv_net"]
+                    net.update({"DCLocation":self.serv.vdc_data_chenger(temp_data[key]["VDC_options"]["DC"])["Tech_name"]})
+                    nets_to_dep.append(net)
+
+            for net in nets_to_dep:
+                print(self.req(url=self._base_url + "network", method="post", data= json.dumps(net)))
+
+
+    
+    
     def vdc(self):
         return self.req(url="https://api.1cloud.ru/dcLocation")
     

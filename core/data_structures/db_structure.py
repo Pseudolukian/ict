@@ -19,3 +19,6 @@ class VDC(SQLModel, table = True):
     low_pull_enable: bool = Field()
     high_pull_enable: bool = Field()
 
+class Servers(SQLModel, table = True):
+    id: Optional[int] = Field(default=None, primary_key=True, nullable=False)
+    server_id: str = Field()

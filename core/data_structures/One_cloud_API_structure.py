@@ -71,3 +71,6 @@ class OS_data(BaseModel):
     Type: str ='GoldServer'
     LinkedSshKeys: list = []
     OperatingSystemType: str ='Ubuntu'
+
+
+# 

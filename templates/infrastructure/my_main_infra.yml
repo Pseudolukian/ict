@@ -1,0 +1,38 @@
+back-xelent:
+  
+  VDC_options:
+    DC: Xelent # DC name must started with capital letter
+    pull: base # pull can be base ('isHighPerformance': 'False') or hight ('isHighPerformance': 'True')
+  
+  servers:
+    Nginx:
+      template: "min_02"
+      playbook: "Nginx_install"
+      value: 0
+    Backend:
+      template: "min_01"
+      playbook: "Django_install"
+      value: 1
+    BD:
+      template: "min_01"
+      playbook: "PosgreSQL_install"
+      value: 0  
+  
+  priv_net:
+    XelPrivNet5:
+      IsDHCP: True
+      servers: []
+    
+
+
+back-ahost:
+  
+  VDC_options:
+    DC: DataSpace
+    pull: hight
+  
+  servers:
+    Node:
+      template: "min_01"
+      playbook: ""
+      value: 0

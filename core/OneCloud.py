@@ -33,75 +33,94 @@ class OneCloudAPI:
             req = requests.delete(url=url, headers=headers)
             return req
         elif method == "post":
-            req = requests.post(url=url, headers=headers, data = data)
+            req = requests.post(url=url, headers=headers, data = json.dumps(data))
             return req.json()
         elif method == "put":
-            req = requests.put(url=url, headers=headers, data = data)
+            req = requests.put(url=url, headers=headers, data = json.dumps(data))
             return req.json()
 
 
-    def server(self, action = "list", data = None):
-        from core.Service import Service
-        serv = Service()
-        """
-        Method return HTTP request to 1cloud API server. 
-        Сервера удаляются, но выпадает ошибка.
-        """
-        except_param_list = ["LinkedSshKeys","LinkedNetworks","HostName",
-                            "AdminUserName","AdminPassword","ImageFamily",
-                            "DateCreate","IsPowerOn","PrimaryNetworkIp","Image",
-                            "IsHighPerformance", "IP"]
-
-        except_param_create = except_param_list                    
+    def server(self, action:str = "list", template:str = ""):
+        def get_list():
+            return self.req(url=self._base_url + "server", method="get")
         
-        servers_list = []
+        def create():
+            serv_in_temp = self.serv.server_parser(template_name=template) #List of servers in template
+            serv_on_dep = [] #List of servers after 1cloud API call
+            serv_on_prod = [s_d["Name"] for s_d in get_list()] #List of servers on prodaction
+            
+            for server in serv_in_temp:
+                if server["Name"] not in serv_on_prod:
+                    serv_prod = self.req(url=self._base_url + "server", method="post", data=server)
+                    serv_on_dep.append(serv_prod)
+            
+            if len(serv_on_dep) == 0:
+                return f"All server from template are created."  
+            elif len(serv_on_dep) != 0:  
+                return serv_on_dep
 
-        if action == "list" and data == None:
-            for server in self.req(url = self._base_url + "server"):
-                for exc in except_param_list:
+        def update():
+            serv_in_temp = [] #List of servers in template
+            exclude_serv_param = ["ImageID", "DCLocation","isHighPerformance"]
+            serv_to_update = [] #List of servers to update
+            servers_updated = []
+            
+            for server in self.serv.server_parser(template_name=template):
+                for exc in exclude_serv_param:
                     del server[exc]
-                servers_list.append(server)
-            return servers_list
+                serv_in_temp.append(server)    
+
+            serv_on_prod = [{"ID":s_d["ID"],"Name":s_d["Name"], "CPU":s_d["CPU"], "RAM":s_d["RAM"],
+                             "HDD":s_d["HDD"], "HDDType":s_d["HDDType"]} 
+                            for s_d in get_list()] 
+            
+
+            for item in serv_in_temp:
+                name = item.get('Name')
+                for server in serv_on_prod:
+                    if name == server.get('Name'):
+                        if item.get('CPU') != server.get('CPU') or item.get('RAM') != server.get('RAM') or item.get('HDD') != server.get('HDD') or item.get('HDDType') != server.get('HDDType'):
+                            new_server = {'ID': server.get('ID'), 'Name': name, 'CPU': item.get('CPU'), 'RAM': item.get('RAM'), 'HDD': item.get('HDD'), 'HDDType': item.get('HDDType')}
+                            serv_to_update.append(new_server)
+
+            
+            for serv in serv_to_update:
+                print(self.req(url= self._base_url + "server/" + str(serv["ID"]) + "/", method="put", data=serv))
+                servers_updated.append(serv["Name"])
+
+            return f"Servers was updated: {servers_updated}."     
         
-        elif action == "delete" and data !=0:
-            serv_in_temp_names = [serv["Name"] for serv in self.serv.infrastr_temp_pars(data)]
-            serv_on_prod = [{serv["Name"]:serv["ID"]} for serv in self.server()]
-
-            servers_on_delete = [server.get(name) for name in serv_in_temp_names for server in serv_on_prod if name in server]
+        def delete():
+            serv_in_temp = self.serv.server_parser(template_name=template) #List of servers in template
+            serv_on_prod = [{s_d["Name"]:s_d["ID"]} for s_d in get_list()] #List of servers on prodaction
+            serv_deleted = []
             
-            for s_del in servers_on_delete:
-                self.req(url=f"https://api.1cloud.ru/server/{s_del}", method="delete")
-                print(f"Server ID {s_del} delete.")
-        
-        elif action == "create" and data !=0:
-            servers_in_temp = self.serv.infrastr_temp_pars(data)
-            serv_on_prod = self.server()
-            serv_to_deploy = []
-            servers_predep = []
             
-            for server in servers_in_temp:
-                if server['Name'] not in [next(iter(x)) for x in serv_on_prod]:
-                    serv_to_deploy.append(server)
-            
-            for dep in serv_to_deploy:
-                serv_pre_dep = self.req(url="https://api.1cloud.ru/server/", method="post", data=json.dumps(dep))
-                servers_predep.append(serv_pre_dep)
-
-            for i in range(len(servers_predep)):
-                for exc in except_param_create:
-                    del servers_predep[i][exc]
-                    servers_predep[i] = servers_predep[i]
-
-            for pre_serv in servers_predep:
-                serv.logger(task_type="Server", data=pre_serv)       
-            
-            return servers_predep     
+            for server in serv_in_temp:
+                name = server.get('Name')
+                for item in serv_on_prod:
+                    if name in item:
+                        print(self.req(url= self._base_url + "server/" + str(item[name]) + "/", method="delete"))
+                        serv_deleted.append(name)
+                        
+            if len(serv_deleted) !=0:
+                return f"Servers {serv_deleted} was deleted."
+            else:
+                return f"Nothing to delete."
         
 
 
-        elif action == "update" and data !=0:
-            
-            pass
+
+
+        if action == "list":
+            return get_list()
+        elif action == "create" and len(template) != 0:
+            return create() 
+        elif action == "delete" and len(template) != 0:
+            return delete()
+        elif action == "update" and len(template) != 0:
+            return update()
+
 
             
     def private_net(self, action = "list", data = None):

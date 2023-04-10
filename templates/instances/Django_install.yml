@@ -1,0 +1,42 @@
+---
+- name: Установка Django и Gunicorn
+  hosts: webserver
+  become: true
+
+  tasks:
+    - name: Установка пакетов Python
+      apt:
+        name: python3 python3-pip python3-dev build-essential libssl-dev libffi-dev
+        state: present
+      become: true
+
+    - name: Установка пакета Git
+      apt:
+        name: git
+        state: present
+      become: true
+
+    - name: Установка виртуального окружения Python
+      pip:
+        name: virtualenv
+        state: present
+      become: true
+
+    - name: Клонирование репозитория Django
+      git:
+        repo: https://github.com/username/my-django-app.git
+        dest: /opt/my-django-app
+      become: true
+
+    - name: Установка зависимостей Django
+      pip:
+        requirements: /opt/my-django-app/requirements.txt
+        virtualenv: /opt/my-django-app/venv
+        state: present
+      become: true
+
+    - name: Запуск приложения Django с помощью Gunicorn
+      command: /opt/my-django-app/venv/bin/gunicorn myproject.wsgi:application --bind 0.0.0.0:8000 --workers 3
+      become: true
+      async: 60
+      poll: 0

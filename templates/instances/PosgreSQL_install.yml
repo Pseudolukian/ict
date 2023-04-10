@@ -1,0 +1,22 @@
+---
+- name: Установка PostgreSQL
+  hosts: dbserver
+  become: true
+
+  tasks:
+    - name: Добавление репозитория PostgreSQL
+      apt_repository:
+        repo: 'deb http://apt.postgresql.org/pub/repos/apt/ {{ ansible_distribution_release }}-pgdg main'
+        state: present
+        update_cache: true
+      become: true
+
+    - name: Установка пакетов PostgreSQL
+      apt:
+        name: postgresql postgresql-contrib
+        state: present
+      become: true
+
+    - name: Создание кластера баз данных
+      shell: /usr/bin/pg_createcluster --start --locale=en_US.UTF-8 11 main
+      become: true

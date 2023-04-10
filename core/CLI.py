@@ -72,17 +72,18 @@ class CLI:
     def server_handler(self, args):
         if args.server_command == 'create':
             print(f'Создание сервера(ров) из шаблона: {args.template}')
-            serv.printer(one.server(action="create", data=args.template))
+            print(one.server(action="create", template=args.template))
             # Создание сервера из шаблона
         elif args.server_command == 'delete':
             print(f'Удаление серверов по шаблону: {args.template}')
-            serv.printer(one.server(action="delete", data=args.template))
+            print(one.server(action="delete", template=args.template))
             # Удаление серверов по шаблону
         elif args.server_command == 'update':
             print(f'Изменение серверов по шаблону: {args.template}')
+            print(one.server(action="update", template=args.template))
             # Изменение серверов по шаблону
         elif args.server_command == 'list':    
-            serv.printer(one.server())
+            print(one.server())
 
 
     def private_net_handler(self, args):

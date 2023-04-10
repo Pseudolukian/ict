@@ -124,26 +124,26 @@ class Service:
                     return yaml.safe_load(file)
         raise FileNotFoundError(f"Template file '{template_name}' not found in '{self.templates_dir}' and its subdirectories.")
     
-    def infrastr_temp_pars(self, template_name: str) -> list:
+    def server_parser(self, template_name: str) -> list:
         servers_data = []
         temp_data = self.template_parser(template_name)
         
         for task in temp_data.keys():
-            serv = self.template_parser(temp_data[task]["servers"]["template"])
-            vdc_data = self.vdc_data_chenger(temp_data[task]["VDC_options"]["DC"])
-            serv.update({"DCLocation":vdc_data["Tech_name"]})
-            
-            if temp_data[task]["VDC_options"]["pull"] == "hight":
-                serv.update({"isHighPerformance":"true"})
-            else:
-                serv.update({"isHighPerformance":"false"})
+            for server in temp_data[task]["servers"]:
+                server_data = self.template_parser(temp_data[task]["servers"][server]["template"])
+                
+                for time in range(temp_data[task]["servers"][server]["value"]):
+                    serv_copy = server_data.copy() 
+                    serv_copy.update({"Name":server + "_" + str(time + 1)})
+                    DC_temp_data = temp_data[task]["VDC_options"]
+                    DC = self.vdc_data_chenger(DC_temp_data["DC"])
+                    serv_copy.update({"DCLocation":DC["Tech_name"]})
+                    if DC_temp_data["pull"] == "hight" and DC["Hight_pool"] is True:
+                        serv_copy.update({"isHighPerformance":"True"})
+                    elif DC_temp_data["pull"] == "base" and DC["Low_pool"] is True:
+                        serv_copy.update({"isHighPerformance":"False"})
+                    servers_data.append(serv_copy) 
 
-            
-            for time in range(temp_data[task]["servers"]["value"]):
-                serv_copy = serv.copy()
-                serv_copy.update({"Name":temp_data[task]["servers"]["name"] + "_" + str(time + 1)})
-                servers_data.append(serv_copy)
-        
         return servers_data
 
 

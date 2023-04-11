@@ -130,11 +130,13 @@ class Service:
         
         for task in temp_data.keys():
             for server in temp_data[task]["servers"]:
+                playbook = temp_data[task]["servers"][server]["playbook"]
                 server_data = self.template_parser(temp_data[task]["servers"][server]["template"])
                 
                 for time in range(temp_data[task]["servers"][server]["value"]):
-                    serv_copy = server_data.copy() 
+                    serv_copy = server_data.copy()
                     serv_copy.update({"Name":server + "_" + str(time + 1)})
+                    serv_copy.update({"playbook":playbook})
                     DC_temp_data = temp_data[task]["VDC_options"]
                     DC = self.vdc_data_chenger(DC_temp_data["DC"])
                     serv_copy.update({"DCLocation":DC["Tech_name"]})
@@ -179,37 +181,7 @@ class Service:
             print(table)
 
 
-    def logger(self, task_type, data):
-        log_path = Path(".", "log.json")
-        def_structure = {"Tasks":[{"Server":[]}, {"Nets":[]}]}
-
-        def opener():
-            with open(log_path) as f:
-                log_data = json.load(f)
-            return log_data["Tasks"]
-
-        def creator():
-            with open(log_path, "w") as log:
-                json.dump(def_structure, log) 
-
-        def editor():
-            log_data = opener()
-            if task_type == "Server":
-                server_tasks = log_data[0]["Server"]
-                server_tasks.append(data)
-            elif task_type == "Net":
-                net_tasks = log_data[1]["Nets"]
-                net_tasks.append(data)
-            with open(log_path, "w") as log:
-                json.dump({"Tasks": log_data}, log)
-
-        if log_path.is_file() and log_path.stat().st_size > 0:
-            editor()
-        else:
-            creator()
-            while not log_path.is_file():
-                time.sleep(1)
-            editor()  
+    
 
    
             

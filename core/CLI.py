@@ -1,8 +1,10 @@
 from core.OneCloud import OneCloudAPI
 from core.Service import Service
+from core.Deploy import Deploy
 import argparse
 
 serv = Service()
+dep = Deploy()
 one = OneCloudAPI(api_key=serv.api_key_caller())
 
 
@@ -64,6 +66,10 @@ class CLI:
         infra_update_parser = infra_subparsers.add_parser('update', help='Изменение инфраструктуры')
         infra_update_parser.add_argument('template', help='Название шаблона для изменения инфраструктуры')
 
+        infra_update_parser = infra_subparsers.add_parser('deploy', help='Изменение инфраструктуры')
+        infra_update_parser.add_argument('template', help='Название шаблона для изменения инфраструктуры')
+       
+        
         # Список шаблонов
         self.templates = {
             'test': 'Это шаблон тестового сервера или инфраструктуры'
@@ -111,11 +117,19 @@ class CLI:
         elif args.infra_command == 'delete':
             print(f'Удаление инфраструктуры по шаблону: {args.template}')
             
-        
         # Изменение инфраструктуры по шаблону
         elif args.infra_command == 'update':
             print(f'Изменение инфраструктуры по шаблону: {args.template}')
+
+        # Деплой Playbook
+        elif args.infra_command == 'deploy':
+            dep_data = dep.prepare_data(template=args.template)
+            print(f'Деплой Playbook: {args.template}')   
+            print(dep.deploy(servers=dep_data))
             
+
+            
+    
 
     def parse_args(self):
         return self.parser.parse_args()
@@ -128,5 +142,7 @@ class CLI:
             self.private_net_handler(args)    
         elif args.command == 'infra':
             self.infra_handler(args)
+        elif args.command == 'deploy':
+            self.infra_handler(args)    
         else:
             print('Неизвестная команда')

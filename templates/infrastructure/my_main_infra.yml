@@ -6,9 +6,9 @@ back-xelent:
   
   servers:
     Nginx:
-      template: "min_02"
+      template: "min_01"
       playbook: "Nginx_install"
-      value: 0
+      value: 1
     Backend:
       template: "min_01"
       playbook: "Django_install"
@@ -16,7 +16,7 @@ back-xelent:
     BD:
       template: "min_01"
       playbook: "PosgreSQL_install"
-      value: 0  
+      value: 1  
   
   priv_net:
     XelPrivNet5:

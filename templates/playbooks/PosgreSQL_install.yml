@@ -1,6 +1,6 @@
 ---
 - name: Установка PostgreSQL
-  hosts: dbserver
+  hosts: PosgreSQL
   become: true
 
   tasks:

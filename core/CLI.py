@@ -123,13 +123,11 @@ class CLI:
 
         # Деплой Playbook
         elif args.infra_command == 'deploy':
-            dep_data = dep.prepare_data(template=args.template)
             print(f'Деплой Playbook: {args.template}')   
-            print(dep.deploy(servers=dep_data))
+            dep_data = dep.prepare_data(template=args.template)
+            dep.create_inventory(hosts_list=dep_data)
+            dep.start_ansible()
             
-
-            
-    
 
     def parse_args(self):
         return self.parser.parse_args()

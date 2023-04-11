@@ -1,6 +1,6 @@
 ---
 - name: Установка Nginx
-  hosts: webserver
+  hosts: Nginx
   become: true
 
   tasks:

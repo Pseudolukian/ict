@@ -2,6 +2,8 @@ from core.Service import Service
 from core.OneCloud import OneCloudAPI
 from core.CLI import CLI
 from core.Deploy import Deploy
+import sys
+
 
 service = Service()
 one = OneCloudAPI(api_key=service.api_key_caller())

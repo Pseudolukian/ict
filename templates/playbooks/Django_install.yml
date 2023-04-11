@@ -1,6 +1,6 @@
 ---
 - name: Установка Django и Gunicorn
-  hosts: webserver
+  hosts: Django
   become: true
 
   tasks:

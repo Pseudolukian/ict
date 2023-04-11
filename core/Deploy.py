@@ -1,13 +1,5 @@
-import os
+import os, re, subprocess, yaml
 from pathlib import Path
-from ansible.parsing.dataloader import DataLoader
-from ansible.inventory.manager import InventoryManager
-from ansible.vars.manager import VariableManager
-from ansible.executor.playbook_executor import PlaybookExecutor
-from ansible.utils.display import Display
-from ansible import context
-from ansible.cli import CLI
-from argparse import Namespace
 
 
 class Deploy:
@@ -38,58 +30,61 @@ class Deploy:
 
         return serv_to_plb_dep
 
-    def deploy(self, servers):
-        # Настройка Ansible
-        loader = DataLoader()
-        inventory = InventoryManager(loader=loader, sources=['/path/to/your/inventory.ini'])
-        variable_manager = VariableManager(loader=loader, inventory=inventory)
-        display = Display()
+    def create_inventory(self, hosts_list, file_name="inventory.ini"):
+        playbooks_path = Path("./templates/playbooks/")
+        inventory = {}
 
-        # Инициализация контекста
-        context.CLIARGS = Namespace(
-            connection='smart',
-            forks=10,
-            listhosts=None,
-            listtasks=None,
-            listtags=None,
-            syntax=None,
-            start_at_task=None,
-            tags=[],
-            skip_tags=[],
-            module_path=None,
-            check=False,
-            diff=False,
-            extra_vars=[]
-        )
+        for host in hosts_list:
+            group = host['playbook'].split('_')[0]
+            if group not in inventory:
+                inventory[group] = {'hosts': [], 'playbook': host['playbook']}
 
-        for server in servers:
-            playbook_path = Path('./templates/instances') / (server["playbook"] + ".yml")
-            if not os.path.exists(playbook_path):
-                print(f"[ERROR] The playbook {playbook_path} does not exist.")
-                continue
+            inventory[group]['hosts'].append(host)
 
-            # Настройка и выполнение плейбука
-            pb = PlaybookExecutor(
-                playbooks=[str(playbook_path)],
-                inventory=inventory,
-                variable_manager=variable_manager,
-                loader=loader,
-                passwords=dict(vault_pass="secret"),
-            )
+        with open(file_name, "w") as f:
+            for group, data in inventory.items():
+                f.write(f"[{group}]\n")
+                for host in data['hosts']:
+                    host_line = f"{host['Name']} ansible_host={host['IP']} ansible_user={host['User']} ansible_ssh_pass={host['Pass']}\n"
+                    f.write(host_line)
+                f.write("\n")
+                
+                group_vars_dir = "group_vars"
+                os.makedirs(group_vars_dir, exist_ok=True)
+                play_book_path = (playbooks_path / data['playbook']).with_suffix('.yml')
+                with open(os.path.join(group_vars_dir, f"{group}.yml"), "w") as group_vars_file:
+                    group_vars_file.write(f"playbook: {play_book_path}\n")
+        
+        return "Ok"  
 
-            # Установка дополнительных переменных для плейбука
-            extra_vars = {
-                "target": server["Name"],
-                "ansible_user": server["User"],
-                "ansible_ssh_pass": server["Pass"],
-                "ansible_host": server["IP"],
-            }
-            variable_manager._extra_vars = extra_vars
+    def start_ansible(self, inventory_file="inventory.ini"):
+        # Получаем имена групп из inventory.ini
+        groups = []
+        with open(inventory_file, "r") as f:
+            for line in f:
+                match = re.match(r'\[(\w+)\]', line)
+                if match:
+                    groups.append(match.group(1))
 
-            # Запуск плейбука
-            result = pb.run()
-            if result == 0:
-                print(f"[SUCCESS] Playbook {playbook_path} executed successfully.")
-            else:
-                print(f"[ERROR] Playbook {playbook_path} failed with result code {result}.")
+        if not groups:
+            print("Не удалось найти имена групп в файле inventory.ini")
+            return
+
+        # Запускаем ansible-playbook для каждой группы
+        for group in groups:
+            # Загружаем файл переменных из директории group_vars
+            group_vars_file = os.path.join("group_vars", f"{group}.yml")
+            with open(group_vars_file, "r") as f:
+                group_vars = yaml.safe_load(f)
+
+            playbook_path = group_vars["playbook"]
+
+            # Запускаем ansible-playbook с путем к плейбуку и inventory.ini
+            ansible_command = f"ansible-playbook -i {inventory_file} {playbook_path} --limit {group}"
+            try:
+                subprocess.run(ansible_command, shell=True, check=True)
+                print(f"Ansible playbook для группы {group} успешно выполнен.")
+            except subprocess.CalledProcessError as e:
+                print(f"Ошибка при выполнении Ansible playbook для группы {group}: {e}")     
+        
 

@@ -172,36 +172,3 @@ class Service:
                 f.write("[{}]\n".format(item["IP"]))
                 f.write("{} ansible_user={} ansible_password={}\n".format(item["IP"], item["user_name"], item["password"]))
         return True
-
-
-    def printer(self, data):
-        
-        def same_keys(dicts: list[dict]) -> bool:
-            keys = set(dicts[0].keys())
-            return all(filter(lambda d: set(d.keys()) == keys, dicts))
-        
-        if type(data) is list and same_keys(dicts = data):
-            table = PrettyTable()
-            table.field_names = list(data[0].keys())
-            for i, d in enumerate(data):
-                table.add_row(list(d.values()))
-            print(table)
-
-        elif type(data) is dict:
-            table = PrettyTable()
-            table.field_names = list(data.keys())
-            for i, d in enumerate(data):
-                table.add_row(list(d.values()))
-            print(table)
-
-
-    
-
-   
-            
-            
-
-            
-
-
-

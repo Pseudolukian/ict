@@ -3,10 +3,8 @@ from pathlib import Path
 
 
 class Deploy:
-    from core.Service import Service
-    from core.OneCloud import OneCloudAPI
-    serv = Service()
-    one = OneCloudAPI(api_key=serv.api_key_caller())
+    def __init__(self, serv):
+        self.serv = serv
 
     def prepare_data(self, template):
         

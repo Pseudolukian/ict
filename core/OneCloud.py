@@ -4,16 +4,17 @@ import requests, json
 
 
 class OneCloudAPI:
-    from core.Service import Service
-    serv = Service()
+    
     """
     This class realized working with 1cloud API server.  
     Вынести API_Key из req в __init__.
     """
-    def __init__(self, api_key):
+    def __init__(self, api_key, serv):
         self._base_url = "https://api.1cloud.ru/"
         self.api_key = api_key
+        self.serv = serv
 
+        
     def req(self, url, method = "get", data=None):
         """
         This is inner main request method to 1cloud API server. Method receive next param:\n

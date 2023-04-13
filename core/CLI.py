@@ -1,16 +1,11 @@
-from core.OneCloud import OneCloudAPI
-from core.Service import Service
-from core.Deploy import Deploy
 import argparse
 
-serv = Service()
-dep = Deploy()
-one = OneCloudAPI(api_key=serv.api_key_caller())
-
-
 class CLI:
-    def __init__(self):
+    def __init__(self, serv, one, dep):
         self.parser = argparse.ArgumentParser(description='Описание вашей программы')
+        self.serv = serv
+        self.one = one
+        self.dep = dep
 
         subparsers = self.parser.add_subparsers(title='Команды', dest='command')
 
@@ -78,24 +73,24 @@ class CLI:
     def server_handler(self, args):
         if args.server_command == 'create':
             print(f'Создание сервера(ров) из шаблона: {args.template}')
-            print(one.server(action="create", template=args.template))
+            print(self.one.server(action="create", template=args.template))
             # Создание сервера из шаблона
         elif args.server_command == 'delete':
             print(f'Удаление серверов по шаблону: {args.template}')
-            print(one.server(action="delete", template=args.template))
+            print(self.one.server(action="delete", template=args.template))
             # Удаление серверов по шаблону
         elif args.server_command == 'update':
             print(f'Изменение серверов по шаблону: {args.template}')
-            print(one.server(action="update", template=args.template))
+            print(self.one.server(action="update", template=args.template))
             # Изменение серверов по шаблону
         elif args.server_command == 'list':    
-            print(one.server())
+            print(self.one.server())
 
 
     def private_net_handler(self, args):
         if args.private_net_command == 'create':
             print(f'Создание сети из шаблона: {args.template}')
-            print(one.private_net(action="create", data=args.template))
+            print(self.one.private_net(action="create", data=args.template))
             # Создание сервера из шаблона
         elif args.private_net_command == 'delete':
             print(f'Удаление сети по шаблону: {args.template}')
@@ -106,7 +101,7 @@ class CLI:
             # Изменение серверов по шаблону
         elif args.private_net_command == 'list':    
             print(f'Список изолированных сетей')
-            print(one.private_net())   
+            print(self.one.private_net())   
 
     def infra_handler(self, args):
         # Создание инфраструктуры из шаблона
@@ -124,9 +119,9 @@ class CLI:
         # Деплой Playbook
         elif args.infra_command == 'deploy':
             print(f'Деплой Playbook: {args.template}')   
-            dep_data = dep.prepare_data(template=args.template)
-            dep.create_inventory(hosts_list=dep_data)
-            dep.start_ansible()
+            dep_data = self.dep.prepare_data(template=args.template)
+            self.dep.create_inventory(hosts_list=dep_data)
+            self.dep.start_ansible()
             
 
     def parse_args(self):

@@ -57,7 +57,7 @@ class Service:
 
     def conf_refresher(self):
         """
-        Не реализован механизм обновления информации с учётом даты. Сейчас метод чекает только длину файла и всё.
+        Method call the 1cloud API to check the actual lists of OS and VDCs, and save them into the ict_config.json.
         """
         from core.OneCloud import OneCloudAPI
         
@@ -89,7 +89,10 @@ class Service:
         
             return "Refresh Ok!"
 
-    def api_key_caller(self):
+    def api_key_caller(self) -> str:
+        """
+        Method returns 1cloud API key from ict_conf.json with calling conf_worker(). 
+        """
         api_key = str()
         
         for el in self.conf_worker()["Config"]:
@@ -99,6 +102,9 @@ class Service:
         return api_key   
         
     def vdc_data_chenger(self, publick_name: str) -> dict[str, str | bool]:
+        """
+        This method take the publick VDC name and return the dict with tech name, low and hight pool data.
+        """
         data = json.load(open(self.full_path))["Config"]
         vdcs = []
         
@@ -117,6 +123,11 @@ class Service:
 
 
     def template_parser(self, template_name: str) -> dict[str, Any]:
+        """
+        This method take the template name and recursive search template in templates folder. 
+        If template does not found, returning exception FileNotFind.
+        If template find -- method return dict with template data.
+        """
         template_name = template_name +".yml"
         for filepath in self.templates_dir.rglob("*"):
             if filepath.is_file() and filepath.name == template_name:
@@ -124,7 +135,10 @@ class Service:
                     return yaml.safe_load(file)
         raise FileNotFoundError(f"Template file '{template_name}' not found in '{self.templates_dir}' and its subdirectories.")
     
-    def server_parser(self, template_name: str) -> list:
+    def server_parser(self, template_name: str) -> list[dict[str,str]]:
+        """
+        Method take the template name, call template_parser(template_name) and formed the list of servers ready to send it to OneCloud.
+        """
         servers_data = []
         temp_data = self.template_parser(template_name)
         
@@ -149,7 +163,7 @@ class Service:
         return servers_data
 
 
-    def create_hosts_file(self, data):
+    def create_hosts_file(self, data:list[dict[str,str]]) ->bool:
         """
         Create a hosts.ini file for Ansible from a list of dictionaries containing IP, user_name, and password.
         """
@@ -157,7 +171,7 @@ class Service:
             for item in data:
                 f.write("[{}]\n".format(item["IP"]))
                 f.write("{} ansible_user={} ansible_password={}\n".format(item["IP"], item["user_name"], item["password"]))
-        return f"Hosts file created."        
+        return True
 
 
     def printer(self, data):

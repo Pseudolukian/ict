@@ -1,6 +1,6 @@
 ---
 - name: Установка Nginx
-  hosts: Nginx
+  hosts: Nginx_*
   become: true
   gather_facts: yes
 

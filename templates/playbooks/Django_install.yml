@@ -1,6 +1,6 @@
 ---
 - name: Установка Django и Gunicorn
-  hosts: Django
+  hosts: Backend_*
   become: true
   gather_facts: yes
 

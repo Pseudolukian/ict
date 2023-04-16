@@ -1,6 +1,6 @@
 ---
 - name: Установка PostgreSQL
-  hosts: PosgreSQL
+  hosts: BD_*
   become: true
   gather_facts: yes
 

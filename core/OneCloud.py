@@ -1,10 +1,10 @@
 import requests, json
+from typing import Union
 
 
 
 
 class OneCloudAPI:
-    
     """
     This class realized working with 1cloud API server.  
     Вынести API_Key из req в __init__.
@@ -42,10 +42,23 @@ class OneCloudAPI:
 
 
     def server(self, action:str = "list", template:str = ""):
-        def get_list():
-            return self.req(url=self._base_url + "server", method="get")
+        """
+        Method working with 1cloud api, using req() to create, deletea and update servers.
+        :: action:str = list, create, delete, update.
+        ::template = server config template.
+        """
+        def get_list() -> list[dict[str,str]]:
+            """
+            Function returns the list of created servers on 1cloud prod.
+            Function calling req(). 
+            """
+            servers_list = self.req(url=self._base_url + "server", method="get")
+            return servers_list
         
-        def create():
+        def create() -> list[dict[str,str]]:
+            """
+            Function create the servers and returns list of panding servers without credentions to connecting Ansible.
+            """
             serv_in_temp = self.serv.server_parser(template_name=template) #List of servers in template
             serv_on_dep = [] #List of servers after 1cloud API call
             serv_on_prod = [s_d["Name"] for s_d in get_list()] #List of servers on prodaction
@@ -56,11 +69,15 @@ class OneCloudAPI:
                     serv_on_dep.append(serv_prod)
             
             if len(serv_on_dep) == 0:
-                return f"All server from template are created."  
+                raise ValueError ("All server from template are created.")
             elif len(serv_on_dep) != 0:  
                 return serv_on_dep
 
-        def update():
+        def update() ->Union[str, list[str]]:
+            """
+            The function merging servers data from 1cloud panel and infrastructure template. 
+            Function returns list of the updated servers name.
+            """
             serv_in_temp = [] #List of servers in template
             exclude_serv_param = ["ImageID", "DCLocation","isHighPerformance"]
             serv_to_update = [] #List of servers to update
@@ -89,9 +106,12 @@ class OneCloudAPI:
                 print(self.req(url= self._base_url + "server/" + str(serv["ID"]) + "/", method="put", data=serv))
                 servers_updated.append(serv["Name"])
 
-            return f"Servers was updated: {servers_updated}."     
+            return f"Servers was updated: {servers_updated}."    
         
-        def delete():
+        def delete() ->Union[str, list[str]]:
+            """
+            The function delete servers from 1cloud Panel according with infrastructure template.
+            """
             serv_in_temp = self.serv.server_parser(template_name=template) #List of servers in template
             serv_on_prod = [{s_d["Name"]:s_d["ID"]} for s_d in get_list()] #List of servers on prodaction
             serv_deleted = []
@@ -107,16 +127,12 @@ class OneCloudAPI:
             if len(serv_deleted) !=0:
                 return f"Servers {serv_deleted} was deleted."
             else:
-                return f"Nothing to delete."
+                raise ValueError ("Nothing to delete.")
         
-
-
-
-
         if action == "list":
             return get_list()
         elif action == "create" and len(template) != 0:
-            return create() 
+            return create()
         elif action == "delete" and len(template) != 0:
             return delete()
         elif action == "update" and len(template) != 0:

@@ -163,12 +163,27 @@ class Service:
         return servers_data
 
 
-    def create_hosts_file(self, data:list[dict[str,str]]) ->bool:
+    def create_hosts_file(self, servers_data_from_prod:list[dict[str,str]]) ->bool:
         """
         Create a hosts.ini file for Ansible from a list of dictionaries containing IP, user_name, and password.
         """
-        with open('hosts.ini', 'w') as f:
-            for item in data:
-                f.write("[{}]\n".format(item["IP"]))
-                f.write("{} ansible_user={} ansible_password={}\n".format(item["IP"], item["user_name"], item["password"]))
-        return True
+        groups = {}
+        for entry in servers_data_from_prod:
+            group_name = entry['Name'].split('_')[0]
+            if group_name not in groups:
+                groups[group_name] = {}
+
+            host = {
+                'ansible_host': entry['IP'],
+                'ansible_user': entry['User'],
+                'ansible_ssh_pass': entry['Pass'],
+                'ansible_playbook': entry['playbook']
+            }
+            groups[group_name][entry['Name']] = host
+
+        inventory = {'all': {'children': {}}}
+        for group_name, hosts in groups.items():
+            inventory['all']['children'][group_name] = {'hosts': hosts}
+
+        with open('hosts.yml', 'w') as file:
+            yaml.dump(inventory, file, default_flow_style=False)

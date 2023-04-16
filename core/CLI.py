@@ -1,11 +1,12 @@
 import argparse
 
 class CLI:
-    def __init__(self, serv, one, dep):
+    def __init__(self, serv, one, pre, ans):
         self.parser = argparse.ArgumentParser(description='Описание вашей программы')
         self.serv = serv
         self.one = one
-        self.dep = dep
+        self.pre = pre
+        self.ans = ans
 
         subparsers = self.parser.add_subparsers(title='Команды', dest='command')
 
@@ -118,10 +119,15 @@ class CLI:
 
         # Деплой Playbook
         elif args.infra_command == 'deploy':
-            print(f'Деплой Playbook: {args.template}')   
-            dep_data = self.dep.prepare_data(template=args.template)
-            self.dep.create_inventory(hosts_list=dep_data)
-            self.dep.start_ansible()
+            print(f'Деплой Playbook: {args.template}')
+            data_from_temp = self.serv.server_parser(template_name = args.template)
+            data_from_prod = self.one.server(action = "list")
+            prepare_invent_data = self.pre.inventory_data(serv_data_from_infr_temp = data_from_temp, 
+                                    serv_on_prod = data_from_prod)
+            self.serv.create_hosts_file(servers_data_from_prod = prepare_invent_data)
+            
+            print(self.ans.start_ansible())
+            
             
 
     def parse_args(self):

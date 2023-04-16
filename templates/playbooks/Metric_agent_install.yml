@@ -1,0 +1,46 @@
+---
+- name: Install Node Exporter
+  hosts: all
+  become: yes
+  tasks:
+    - name: Download Node Exporter
+      get_url:
+        url: "https://github.com/prometheus/node_exporter/releases/download/v1.3.1/node_exporter-1.3.1.linux-amd64.tar.gz"
+        dest: "/tmp/node_exporter-1.3.1.linux-amd64.tar.gz"
+        checksum: sha256:d7a8d4c67b4f4e32d990b7f91484b3c2d2f65bc692f5197fa8fddbacec0b24f0
+
+    - name: Extract Node Exporter
+      ansible.builtin.unarchive:
+        src: "/tmp/node_exporter-1.3.1.linux-amd64.tar.gz"
+        dest: "/opt"
+        remote_src: yes
+        creates: "/opt/node_exporter-1.3.1.linux-amd64/node_exporter"
+
+    - name: Create a symlink to Node Exporter binary
+      command: "ln -s /opt/node_exporter-1.3.1.linux-amd64/node_exporter /usr/local/bin/node_exporter"
+      args:
+        creates: "/usr/local/bin/node_exporter"
+
+    - name: Create Node Exporter systemd service file
+      copy:
+        content: |
+          [Unit]
+          Description=Node Exporter
+          Wants=network-online.target
+          After=network-online.target
+
+          [Service]
+          User=nobody
+          Group=nogroup
+          Type=simple
+          ExecStart=/usr/local/bin/node_exporter
+
+          [Install]
+          WantedBy=multi-user.target
+        dest: "/etc/systemd/system/node_exporter.service"
+
+    - name: Enable and start Node Exporter service
+      ansible.builtin.systemd:
+        name: node_exporter
+        enabled: yes
+        state: started

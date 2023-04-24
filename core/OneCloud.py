@@ -160,10 +160,10 @@ class OneCloudAPI:
 
     
     
-    def vdc(self):
+    def get_vdc_list(self):
         return self.req(url="https://api.1cloud.ru/dcLocation")
     
-    def os(self):
+    def get_os_list(self):
         return self.req(url="https://api.1cloud.ru/image")
 
     def acc(self):

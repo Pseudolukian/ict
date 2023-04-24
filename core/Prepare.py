@@ -1,11 +1,11 @@
-
+import json
 class Prepare:
     """
     The Prepare class realize logic to prepare data to other classes.
     """
 
-    def __init__(self) -> None:
-        pass
+    def __init__(self, data_structures) -> None:
+        self.data_structures = data_structures
 
     def inventory_data(self, serv_data_from_infr_temp:list[dict[str,str]], serv_on_prod:list[dict[str,str]]) -> list[dict[str,str]]:
         """
@@ -30,3 +30,16 @@ class Prepare:
                     serv_to_plb_dep.append(server)
 
         return serv_to_plb_dep
+      
+
+    def conf_data_prepare(self, api_key, vdc_get_list:list = [], os_get_list:list = []) -> dict[str,str]:
+        
+        vdc_conf = self.data_structures["VDC_config"]
+        vdc_list_clean = [vdc_conf(**vdc) for vdc in vdc_get_list]
+        os_conf = self.data_structures["OS_template_config"]
+        os_list_clean = [os_conf(**os) for os in os_get_list]
+        config = self.data_structures["Config_file"]
+        conf_out = config(API_key = api_key, VDC_list = vdc_list_clean, OS_list = os_list_clean)
+        return conf_out.dict()
+        
+    

@@ -1,9 +1,7 @@
 from pydantic import root_validator, validator, BaseModel, Field, ValidationError, constr
 from typing import Optional
 from enum import Enum
-from core.Service import Service
 
-service = Service()
 
 #==============1cloud server API requests==============#
 class Server_Disk_System(str,Enum):
@@ -71,6 +69,3 @@ class OS_data(BaseModel):
     Type: str ='GoldServer'
     LinkedSshKeys: list = []
     OperatingSystemType: str ='Ubuntu'
-
-
-# 

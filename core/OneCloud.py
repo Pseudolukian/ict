@@ -1,6 +1,6 @@
-import requests, json
-from typing import Union
-
+from typing import Union, List, Dict, Any
+import json
+import requests
 
 
 
@@ -15,7 +15,7 @@ class OneCloudAPI:
         self.serv = serv
 
         
-    def req(self, url, method = "get", data=None):
+    def req(self, url, method = "get", input_data:Dict[str, Any] = {}):
         """
         This is inner main request method to 1cloud API server. Method receive next param:\n
         :: url -- 1cloud API url;
@@ -27,21 +27,22 @@ class OneCloudAPI:
         method.lower()
         api_key = self.api_key
         headers = {"Content-Type":"application/json","Authorization": "Bearer {}".format(api_key)}
+        
         if method == "get":
-            req = requests.get(url=url, headers=headers)
+            req = requests.get(url = url, headers = headers, timeout = 5)
             return req.json()
         elif method == "delete":
-            req = requests.delete(url=url, headers=headers)
-            return req
+            req = requests.delete(url = url, headers = headers, timeout = 5)
+            return req.text
         elif method == "post":
-            req = requests.post(url=url, headers=headers, data = json.dumps(data))
+            req = requests.post(url = url, headers = headers, data = json.dumps(input_data), timeout = 10)
             return req.json()
         elif method == "put":
-            req = requests.put(url=url, headers=headers, data = json.dumps(data))
+            req = requests.put(url = url, headers = headers, data = json.dumps(input_data), timeout = 10)
             return req.json()
 
 
-    def server(self, action:str = "list", template:str = ""):
+    def server(self, server_id:str = "", action:str = "list", serv_data_to_dep:Dict[str, Any] = {}):
         """
         Method working with 1cloud api, using req() to create, deletea and update servers.
         :: action:str = list, create, delete, update.
@@ -55,111 +56,78 @@ class OneCloudAPI:
             servers_list = self.req(url=self._base_url + "server", method="get")
             return servers_list
         
-        def create() -> list[dict[str,str]]:
+        def create() -> str:
             """
             Function create the servers and returns list of panding servers without credentions to connecting Ansible.
             """
-            serv_in_temp = self.serv.server_parser(template_name=template) #List of servers in template
-            serv_on_dep = [] #List of servers after 1cloud API call
-            serv_on_prod = [s_d["Name"] for s_d in get_list()] #List of servers on prodaction
             
-            for server in serv_in_temp:
-                if server["Name"] not in serv_on_prod:
-                    serv_prod = self.req(url=self._base_url + "server", method="post", data=server)
-                    serv_on_dep.append(serv_prod)
-            
-            if len(serv_on_dep) == 0:
-                raise ValueError ("All server from template are created.")
-            elif len(serv_on_dep) != 0:  
-                return serv_on_dep
+            print(self.req(url = self._base_url + "server", method = "post", input_data = serv_data_to_dep))
 
-        def update() ->Union[str, list[str]]:
+        def update() -> str:
             """
             The function merging servers data from 1cloud panel and infrastructure template. 
             Function returns list of the updated servers name.
             """
-            serv_in_temp = [] #List of servers in template
-            exclude_serv_param = ["ImageID", "DCLocation","isHighPerformance"]
-            serv_to_update = [] #List of servers to update
-            servers_updated = []
-            
-            for server in self.serv.server_parser(template_name=template):
-                for exc in exclude_serv_param:
-                    del server[exc]
-                serv_in_temp.append(server)    
 
-            serv_on_prod = [{"ID":s_d["ID"],"Name":s_d["Name"], "CPU":s_d["CPU"], "RAM":s_d["RAM"],
-                             "HDD":s_d["HDD"], "HDDType":s_d["HDDType"]} 
-                            for s_d in get_list()] 
-            
-
-            for item in serv_in_temp:
-                name = item.get('Name')
-                for server in serv_on_prod:
-                    if name == server.get('Name'):
-                        if item.get('CPU') != server.get('CPU') or item.get('RAM') != server.get('RAM') or item.get('HDD') != server.get('HDD') or item.get('HDDType') != server.get('HDDType'):
-                            new_server = {'ID': server.get('ID'), 'Name': name, 'CPU': item.get('CPU'), 'RAM': item.get('RAM'), 'HDD': item.get('HDD'), 'HDDType': item.get('HDDType')}
-                            serv_to_update.append(new_server)
-
-            
-            for serv in serv_to_update:
-                print(self.req(url= self._base_url + "server/" + str(serv["ID"]) + "/", method="put", data=serv))
-                servers_updated.append(serv["Name"])
-
-            return f"Servers was updated: {servers_updated}."    
+            print(self.req(url = self._base_url + "server/" + server_id + "/", method = "put", input_data = serv_data_to_dep))
+               
         
-        def delete() ->Union[str, list[str]]:
+        def delete() -> str:
             """
             The function delete servers from 1cloud Panel according with infrastructure template.
             """
-            serv_in_temp = self.serv.server_parser(template_name=template) #List of servers in template
-            serv_on_prod = [{s_d["Name"]:s_d["ID"]} for s_d in get_list()] #List of servers on prodaction
-            serv_deleted = []
+
+            print(self.req(url = self._base_url + "server/" + str(serv_data_to_dep) + "/", method = "delete"))
             
-            
-            for server in serv_in_temp:
-                name = server.get('Name')
-                for item in serv_on_prod:
-                    if name in item:
-                        print(self.req(url= self._base_url + "server/" + str(item[name]) + "/", method="delete"))
-                        serv_deleted.append(name)
-                        
-            if len(serv_deleted) !=0:
-                return f"Servers {serv_deleted} was deleted."
-            else:
-                raise ValueError ("Nothing to delete.")
         
         if action == "list":
             return get_list()
-        elif action == "create" and len(template) != 0:
+        elif action == "create" and len(serv_data_to_dep) != 0:
             return create()
-        elif action == "delete" and len(template) != 0:
+        elif action == "delete" and len(serv_data_to_dep) != 0:
             return delete()
-        elif action == "update" and len(template) != 0:
+        elif action == "update" and len(serv_data_to_dep) != 0:
             return update()
 
 
-            
-    def private_net(self, action = "list", data = None):
-        if action == "list" and data is None:
-            return self.req(url="https://api.1cloud.ru/network", method="get")
+    def infrastructure_update(self, infrastr_data:Dict[str,List[Dict[str, Any]]]):
+        #================Print information set up========================
+        point = "#"
+        placeholder = "="
+        label = "Infrastructure info"
+        header = "The following changes will be made to the infrastructure:"
+        place_holder_len = int(((len(header)-len(label))-2)/2)
+        print(point, placeholder*place_holder_len, label, placeholder*place_holder_len, point)
+        print()
+        print(header)
+        print(" "*4, "- Servers to be created:", len(infrastr_data["Servers_to_create"]))
+        print(" "*4, "- Servers to be updated:", len(infrastr_data["Servers_to_change"]))
+        print(" "*4, "- Servers to be deleted:", len(infrastr_data["Servers_to_delete"]))
+        print()
+        print(point, placeholder*place_holder_len, placeholder*len(label), placeholder*place_holder_len, point)
+        choice = input("You a confirm information (Y/N): ")
         
-        elif action == "create" and data !=0:
-            temp_data = self.serv.template_parser(data)
-            nets_to_dep = []
-        
-            for key in temp_data.keys():
-                if "priv_net" in temp_data[key].keys():
-                    net = temp_data[key]["priv_net"]
-                    net.update({"DCLocation":self.serv.vdc_data_chenger(temp_data[key]["VDC_options"]["DC"])["Tech_name"]})
-                    nets_to_dep.append(net)
-
-            for net in nets_to_dep:
-                print(self.req(url=self._base_url + "network", method="post", data= json.dumps(net)))
-
-
-    
-    
+        #================Main logic==================================#
+        if choice == "Y":
+            for server_category, category_data in infrastr_data.items():
+                if server_category == "Servers_to_create":
+                    if len(category_data) != 0:
+                        for server in category_data:
+                            #print("Server to create:", server)
+                            print(self.server(action = "create", serv_data_to_dep = server))
+                elif server_category == "Servers_to_change":
+                    if len(category_data) != 0:
+                        for server_data in category_data:
+                            print(server_data)
+                            print(self.server(action = "update", serv_data_to_dep = server_data, server_id = server_data["ID"]))
+                elif server_category == "Servers_to_delete":
+                    if len(category_data) != 0:
+                        for server_id in category_data:
+                            #print("Server to delete:",id)
+                            print(self.server(action = "delete", serv_data_to_dep = server_id))
+        elif choice == "N":
+            print("Abort infrastructure changing!")                    
+      
     def get_vdc_list(self):
         return self.req(url="https://api.1cloud.ru/dcLocation")
     

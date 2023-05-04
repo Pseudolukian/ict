@@ -1,8 +1,8 @@
-from typing import List, Union
-from pydantic import root_validator, validator, BaseModel, Field, ValidationError, constr
-from core.data_structures.One_cloud_API_structure import VDC_data,OS_data
-from datetime import datetime
+from pydantic import BaseModel, Field, HttpUrl, validator
+from typing import Union, Any, Dict, List, Optional
 
+from ..OneCloud.Requests.Get_VDC_list import VDC_data
+from ..OneCloud.Requests.Get_OS_list import OS_data
 
 class VDC_config(VDC_data):
     
@@ -28,11 +28,12 @@ class OS_template_config(OS_data):
 
 
 class Config_file(BaseModel):
+    
     def datestamp_creator() -> str:
         date_now = datetime.now().strftime('%d.%m')
         return date_now
 
-    API_key:str = Field(min_length=64, max_length=64)
+    API_key: str = Field(default=None, min_length=64, max_length=64)
     Datestamp: str = Field(default_factory=datestamp_creator)
     VDC_list: List[VDC_config]
     OS_list: List[OS_template_config]

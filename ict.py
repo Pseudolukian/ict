@@ -1,15 +1,8 @@
-from core.data_structures.OneCloud.API_KEY import API_key
-from pathlib import Path
-from core.Service import SERVICE
+from Core.Core import Core, CorePort
+import json
 
-#======Set up pathes=========#
-set_up_paths = {"config_file_path":Path("./data/ict_config.json"),}
- = 
-infra_templates_directory = Path("./templates/infrastructure")
-playbooks_directory = Path("./templates/playbooks")
-server_templates_directory = Path("./templates/servers")
-#============================#
+core_port = CorePort(APi_key="334725caf383e2a52eb942d53924bb24a7d87c89b74505af638b19424df32f80", Module="Server", Command="GetList")
+core = Core(core_port=core_port)
+result = core.run(core_port=core_port)
+print(result.dict())
 
-serv = SERVICE()
-
-print(serv.file_open.infr_temp(infrastrucre_temp_name = "my_main_infra"))

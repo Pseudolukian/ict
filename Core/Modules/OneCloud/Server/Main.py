@@ -40,10 +40,15 @@ class Server:
         data_out = requests.post(url= self.url.server + str(ServerActionData.ID) + "/action/", headers = self.headers.dict(), json = str(ServerActionData.Type))
         answer = ServerChangeAnswer(**json.load(data_out))
         return answer
-    def Net(self, ServerConnectData:ServerConnectToNET ) -> ServerChangeAnswer:
+    def ConnectNet(self, ServerConnectData:ServerConnectToNET ) -> ServerChangeAnswer:
         data_out = requests.post(url= self.url.server + str(ServerConnectData.ID) + "/action/", headers = self.headers.dict(), json = ServerConnectToNET.json(exclude={"ID"}))
         answer = ServerChangeAnswer(**json.load(data_out))
         return answer
+    def DisconnectNet(self, ServerConnectData:ServerConnectToNET ) -> ServerChangeAnswer:
+        data_out = requests.post(url= self.url.server + str(ServerConnectData.ID) + "/action/", headers = self.headers.dict(), json = ServerConnectToNET.json(exclude={"ID"}))
+        answer = ServerChangeAnswer(**json.load(data_out))
+        return answer
+    
     def GetStatus(self, ServerID:int) -> ServerStatus:
         """
         The method takes 1 argument position - ServerID 
@@ -54,9 +59,13 @@ class Server:
         Returns:
             ServerStatus: _description_
         """
-        data_out = requests.get(url=self.url.server + str(ServerID), headers=self.headers.dict())
-        answer = ServerStatus(**data_out.json())
-        return answer
+        data_out = requests.get(url=self.url.server + str(ServerID), headers = self.headers.dict())
+        
+        try:
+            answer = ServerStatus(**data_out.json())
+            return answer
+        except requests.exceptions.JSONDecodeError:
+            return data_out.text
 
     def GetList(self) -> ServersList:
         """

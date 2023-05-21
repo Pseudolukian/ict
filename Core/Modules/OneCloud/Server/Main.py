@@ -21,9 +21,18 @@ class Server:
         self.headers = HEADERS(Api_key = self.Api_key)
 
     def create(self, ServerData:ServerCreate) -> ServerStatus:
-        data_out = requests.post(url = self.url.server, headers = self.headers.dict(), json = ServerData.json())
-        answer = ServerStatus(**json.load(data_out))
-        return answer
+        send_serv_data = ServerCreate(**ServerData).dict(exclude_none= True)
+        recive_data = ServerStatus
+        
+        req = requests.post(url=self.url.server, headers = self.headers.dict(), json = send_serv_data)
+        
+        if req.status_code == 200:
+            print(req.json())
+            recive_data = ServerStatus(**req.json())
+            return recive_data
+        else:
+            return req.json()
+    
     def delete(self, ServerID:int) -> str:
         data_out = requests.delete(url = self.url.server + str(ServerID), headers = self.headers.dict())
         answer = data_out.json()

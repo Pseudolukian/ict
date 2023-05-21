@@ -18,3 +18,22 @@ back-xelent:
         playbook: "PosgreSQL_install"
         value: 1
 
+back-ahost:
+  
+  VDC_options:
+    DC: Ahos # DC name must started with capital letter
+    pull: hight # pull can be base ('isHighPerformance': 'False') or hight ('isHighPerformance': 'True')
+  
+  Servers:
+    - Nginx:
+        template: "min_02"
+        playbook: "Nginx_install"
+        value: 1
+    - Backend:
+        template: "min_02"
+        playbook: "Django_install"
+        value: 1
+    - BD:
+        template: "min_02"
+        playbook: "PosgreSQL_install"
+        value: 1

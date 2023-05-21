@@ -1,6 +1,7 @@
 from ..NET.DataStr import LinkedNetwork
 from pydantic import BaseModel, validator, Field
-from typing import List, Optional, Any
+from typing import List, Optional, Any, Union
+from datetime import datetime
 
 class ServerCreate(BaseModel):
     """
@@ -20,6 +21,7 @@ class ServerCreate(BaseModel):
     isBackupActive: str = Field(default="false", choices=["false", "true"]) #Option using by set a backup mechanism. Can be false or true.
     BackupPeriod: str = Field(default="0", choices=["0","7","14","28"]) #Option using by set a backup period. Can be 0,7,14, and 28 days.
     SshKeys:List[int] = Field(default=None)
+    
 
 
 class ServerChange(BaseModel):
@@ -48,8 +50,8 @@ class ServerStatus(BaseModel):
     HDD:int
     HDDType:str
     IP:str
-    AdminUserName:str
-    AdminPassword:str
+    AdminUserName:Union[str, None]
+    AdminPassword:Union[str, None]
     Image:str
     IsHighPerformance:bool = Field(choises = [True, False])
     PrimaryNetworkIp:str
@@ -57,6 +59,7 @@ class ServerStatus(BaseModel):
     ImageFamily:str
     LinkedSshKeys:Optional[List[Any]]
     LinkedNetworks:List[LinkedNetwork]
+    DateCreate:str
 
 class ServersList(BaseModel):
     ServersList:List[ServerStatus]  

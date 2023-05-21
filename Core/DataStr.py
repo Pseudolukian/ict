@@ -6,20 +6,11 @@ from typing import Dict, Any, Optional
 
 
 
-class CommandData(BaseModel):
-    Data: str = Field(default=None)
-        
-class CorePort(BaseModel):
-    APi_key: constr(strip_whitespace=True, min_length=64, max_length=64)
-    Module: str
-    Command: str
-    Data: Optional[CommandData]
+class APIKEY(BaseModel):
+    API_KEY:constr(strip_whitespace=True, min_length=64, max_length=64)
 
-
-    @validator("Data", pre=True, always=True)
-    def converter_to_dict(cls, value):
-        if value is not None:
-            return value.dict()
+    def __str__(self):
+        return self.API_KEY
 
     
      

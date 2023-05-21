@@ -4,13 +4,30 @@ import yaml
 
 
 class Ansible:
+    """
+    Represents an Ansible instance that can start Ansible and run playbooks for hosts specified in the inventory.
+
+    Args:
+        serv (str): The name or description of the Ansible service.
+
+    Attributes:
+        serv (str): The name or description of the Ansible service.
+    """
     def __init__(self, serv):
         self.serv = serv
 
 
     def start_ansible(self, inventory="./hosts.yml"):
         """
-        Method starts the Ansible.
+        Starts Ansible and runs playbooks for hosts specified in the inventory.
+
+        Args:
+            inventory (str, optional): Path to the Ansible inventory file. Defaults to "./hosts.yml".
+
+        Returns: None
+
+        Raises:
+            subprocess.CalledProcessError: If the execution of the Ansible playbook fails.
         """
        # Read and parse the inventory file
         with open(inventory, 'r') as file:

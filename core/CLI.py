@@ -1,6 +1,15 @@
 import argparse
 
 class CLI:
+    """
+    Initializes the CLI object.
+
+        Arguments:
+        - serv: The service object used for infrastructure operations.
+        - one: The object used for server-related operations.
+        - pre: The object used for data preparation.
+        - ans: The object used for Ansible-related operations.
+    """
     def __init__(self, serv, one, pre, ans):
         self.parser = argparse.ArgumentParser(description='Описание вашей программы')
         self.serv = serv
@@ -29,7 +38,14 @@ class CLI:
     
 
     def infra_handler(self, args):
-        # Создание инфраструктуры из шаблона
+        """
+        Handles infrastructure-related commands.
+
+        Arguments:
+        - args (argparse.Namespace): Command line arguments.
+
+        Returns: None
+        """
         if args.infra_command == 'update':
             
             temp_data = self.serv.infrast_temp_opener(infr_template_name = args.template) #1. Take a infrastructure template data
@@ -55,9 +71,20 @@ class CLI:
             
 
     def parse_args(self):
+        """
+        Parses the command line arguments.
+
+        Returns:
+            argparse.Namespace: Parsed command line arguments.
+        """
         return self.parser.parse_args()
 
     def run(self):
+        """
+        Executes the CLI application based on the command provided.
+
+        Returns: None
+        """
         args = self.parse_args()
         if args.command == 'infra':
             self.infra_handler(args)

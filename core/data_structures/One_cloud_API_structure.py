@@ -8,9 +8,10 @@ from pydantic import validator, BaseModel, Field
 #==============1cloud server API requests==============#
 class ServerData(BaseModel):
     """
-    *Upload server data Pydantic model*
-    This is Pydantic model describing a 1cloud API server create method and validating all required fields of server create method.
-    Also model has a validor, each convert DCLocation data from public VDC name to inner tech name.
+    Pydantic model for uploading server data.
+
+    This model describes the server create method and validates all the required fields.
+    It includes a validator that converts the DCLocation data from the public VDC name to the inner technical name.
     """
 
     Name: str = "Demo_API_Server"
@@ -27,9 +28,10 @@ class ServerData(BaseModel):
     @validator("DCLocation", pre=True, always=True)
     def vdc_name_changer(cls, value) -> str:
         """
-        The function changes human understandably VDC name to technical name needing to create the server.
+        Function to convert human-readable VDC name to the technical name required to create the server.
+
         Returns:
-            str: VDC tech name.
+            str: Technical name of the VDC.
         """
         conf_path = Path("./data/ict_conf.json")
         conf_data = json.load(open(conf_path, 'r'))
@@ -40,6 +42,10 @@ class ServerData(BaseModel):
 #======1cloud API servers_list=============
 
 class ServerDataFilter(BaseModel):
+    """
+    Pydantic model for filtering server data.
+    This model is used to filter server data based on various criteria.
+    """
     ID:Optional[str]
     Name:str
     CPU:int
@@ -48,6 +54,10 @@ class ServerDataFilter(BaseModel):
     HDDType:str
 
 class Server_VDC_data_saver(BaseModel):
+    """_
+    Pydantic model for saving server VDC data.
+    This model represents the VDC data for a server and includes additional options.
+    """
     Name:str
     isHighPerformance: str = Field(default="false", choices=["false", "true"]) #VDC pull level. Can be false or true.
     DCLocation: str = Field(default="Xelent")  #Technical name of VDC. Automaticaly cahnging by validator.
@@ -60,6 +70,10 @@ class Server_VDC_data_saver(BaseModel):
 #==============1cloud VDC API requests==============#      
 
 class VDC_data(BaseModel):
+    """
+    Pydantic model for VDC (Virtual Data Center) data.
+    This model represents the data for a VDC.
+    """
     Title: str = "Xelent"
     TechTitle: str = "SdnSpb"
     IsEnableLowPool: bool = True
@@ -77,6 +91,10 @@ class VDC_data(BaseModel):
 #==============1cloud OS API requests==============#       
 
 class OS_data(BaseModel):
+    """
+    Pydantic model for OS (Operating System) data.
+    This model represents the data for an operating system.
+    """
     ID: int =2169
     DisplayName: str ='Ubuntu 18.04 x64'
     Name: str ='Ubuntu18.04x64'

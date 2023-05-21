@@ -16,6 +16,27 @@ class ConfigFileKeyError(KeyError):
         self.text = text
 
 class Service:
+    """
+    The Service class provides methods for managing a configuration file and templates in a service application. 
+    It can open, parse, and update configuration files, as well as locate and open templates. 
+    It also provides methods for creating hosts files for use with Ansible.
+
+    Attributes:
+        templates_dir (Path): Path to the directory containing templates.
+        conf_dir (Path): Path to the directory containing the configuration file.
+        conf_name (str): Name of the configuration file.
+        full_path (Path): Full path to the configuration file.
+        pre: A reference to an external data preparation function used in some methods.
+
+    Methods:
+        api_key_caller: Retrieves the API-key from the configuration file.
+        conf_file_parser: Parses the configuration file and returns the value of the given key.
+        create_conf: Creates a new configuration file and adds the API-key to it.
+        update_conf: Updates the configuration file with new information.
+        template_opener: Searches for and opens a specified template.
+        infrast_temp_opener: Prepares server specifications for 1cloud API.
+        create_hosts_file: Creates a hosts.ini file for Ansible from the given server data.
+    """
     
 
     def __init__(self,  pre, templates_dir: Path = Path("./templates"), conf_dir: Path = Path("./data"), 
@@ -29,10 +50,10 @@ class Service:
 
     def api_key_caller(self) -> str:
         """
-        The function opens the config file and returns the API-key.
-
+        This method opens the config file located at the default templates directory (__init__.full_path).
+    
         Returns:
-            str: API-key.
+            str: The API-key retrieved from the config file.
         """
         
         conf = json.load(open(self.full_path, 'r'))["API_key"]
@@ -40,19 +61,19 @@ class Service:
     
     def conf_file_parser(self, config_key:str = "API_key") -> Union[Dict[str, Any], List[Dict[str, Any]]]:
         """
-        The function pars the config file and returns value of input config key.
+        The function parses the config file and returns the value of the input config key.
 
         Args:
-            config_key (str, optional): config file key for searching. 
+            config_key (str, optional): Config file key for searching.
 
         Raises:
-            ConfigFileKeyError: config file key not found.
+            ConfigFileKeyError: If the config file key is not found.
 
         Returns:
-            Union[Dict[str, Any], List[Dict[str, Any]]]: the function can returns:
-            - API-key as string format;
-            - OSes list as list of dicts;
-            - VDCs list as list of dicts.
+            Union[Dict[str, Any], List[Dict[str, Any]]]: The function can return:
+            - API-key in string format;
+            - OSes list as a list of dictionaries;
+            - VDCs list as a list of dictionaries.
         """
         conf_data = json.load(open(self.full_path, 'r'))
 
@@ -68,12 +89,12 @@ class Service:
 
     def create_conf(self) -> str:
         """
-        The function creates the config file and adds the API-key into the file.
-        The file will not be created until the user enters the correct API-key.
-        After creating the file, the function returns the API-key string.
+        This function creates the config file and adds the API-key into the file.
+        The file will not be created until the user enters a valid API-key.
+        After the file is created, the function returns the API-key as a string.
 
         Returns:
-            str: API-key.
+            str: The API-key.
         """
         api_key_input = str()
         
@@ -90,17 +111,17 @@ class Service:
 
     def update_conf(self, api_key_from_conf:str, vdc_list:list, os_list:list) -> bool:
         """
-        The function takes 3 position arguments and updates the config file, as a result returns bool value.
-        The data prepare class function is called in and arguments from the outer function are passed into the inner function.
-        When work is finished, the function returns the bool value. 
+        This function takes three positional arguments, updates the config file, and returns a Boolean value.
+        It calls a data preparation function within it, passing the arguments from the outer function into the inner function.
+        When the work is finished, it returns a Boolean value.
 
         Args:
-            api_key_from_conf (str): API-key from configuration file.
-            vdc_list (list): list of VDCs for parsing and adding to conf file.   
-            os_list (list): list of OSes for parsing and adding to conf file.
+            api_key_from_conf (str): API-key from the configuration file.
+            vdc_list (list): List of VDCs to be parsed and added to the configuration file.   
+            os_list (list): List of OSes to be parsed and added to the configuration file.
 
         Returns:
-            bool: signal bool value.
+            bool: A signal Boolean value. If the operation was successful, it returns True. Otherwise, it returns False.
         """
         out_data = self.pre.conf_data_prepare(api_key = api_key_from_conf, vdc_get_list = vdc_list, os_get_list = os_list)
         
@@ -111,9 +132,18 @@ class Service:
 
     def template_opener(self, template_name: str) -> dict[str, Any]:
         """
-        This method take the template name and recursive search template in templates folder. 
-        If template does not found, returning exception FileNotFind.
-        If template find -- method return dict with template data.
+        This method takes the template name and recursively searches for the template in the templates folder. 
+        If the template is not found, it raises a TemplateNotFound error.
+        If the template is found, the method returns a dictionary with the template data.
+
+        Args:
+            template_name (str): The name of the template to search for.
+
+        Raises:
+            TemplateNotFound: If the template is not found in the templates folder.
+
+        Returns:
+            dict[str, Any]: A dictionary containing the template data if the template is found.
         """
         template_name = template_name +".yml"
         for filepath in self.templates_dir.rglob("*"):
@@ -123,6 +153,16 @@ class Service:
         raise TemplateNotFound(f"Template file '{template_name}' not found.")
     
     def infrast_temp_opener(self, infr_template_name: str) -> list[dict[str, Any]]:
+        """
+        This method receives one positional argument -- the name of the infrastructure template without an extension. 
+        The method returns a list of servers with their specs, ready for use with the 1cloud API.
+
+        Args:
+            infr_template_name (str): Name of the infrastructure template without an extension. 
+
+        Returns:
+            list[dict[str, Any]]: List of servers with their specs ready for use with the 1cloud API.
+        """
         temp_data = self.template_opener(template_name = infr_template_name)
         servers_out_list = []
         for task_name, task_data in temp_data.items():
@@ -155,7 +195,20 @@ class Service:
 
     def create_hosts_file(self, servers_data_from_prod:list[dict[str,str]]) -> bool:
         """
-        Create a hosts.ini file for Ansible from a list of dictionaries containing IP, user_name, and password.
+        This function creates a 'hosts.yml' inventory file for Ansible using a list of dictionaries that contain server data.
+        The data includes server IP, username, password, and playbook information. Servers are grouped based on the prefix
+        in their names (everything before the first underscore '_'). 
+
+        Args:
+            servers_data_from_prod (list[dict[str, str]]): A list of dictionaries. Each dictionary represents a server
+                                                        and contains the following keys: 'IP', 'User', 'Pass', 'Name',
+                                                        and 'playbook'. 
+
+        Returns:
+            bool: True if the file was created successfully, False otherwise.
+
+        Raises:
+            FileNotFoundError: If the file could not be written.
         """
         groups = {}
         for entry in servers_data_from_prod:
